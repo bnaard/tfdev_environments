@@ -1,5 +1,12 @@
 # General variables
 
+variable "deployment_name" {
+  type        = string
+  description = "Identifies the deployment by name (eg. to destry everything at once)"
+  default     = "opentelekomcloud_deployment"
+}
+
+
 variable "environment" {
   type        = string
   description = "Identifies environment type (eg development, production)"
@@ -31,12 +38,30 @@ variable "tenant_name" {
   description = "OTC tenant (i.e. project name)"
 }
 
+variable "vpc_name" {
+  default = "opentelekomcloud_vpc"
+}
+
+variable "vpc_cidr" {
+  default = "192.168.0.0/16"
+}
+
+
 
 # Bastion host specific variables
+
+variable "bastion_subnet_cidr" {
+    default = "192.168.1.0/24"
+}
 
 variable "bastion_admin_key_name" {
   type        = string
   description = "Key name from user rolling out the bastion host"
+}
+
+variable "bastion_admin_public_key_file" {
+  type        = string
+  description = "Public Key file name for the bastion host"
 }
 
 variable "bastion_region" {
@@ -46,7 +71,8 @@ variable "bastion_region" {
 
 variable "bastion_availability_zone" {
   type        = string
-  description = "OTC availability zone"
+  description = "OTC availability zone for the bastion host an its attached disks"
+  default     = "eu-de-01"
 }
 
 variable "bastion_flavor_name" {
@@ -54,22 +80,6 @@ variable "bastion_flavor_name" {
   default     = "s3.medium.2"
   description = "Name of the compute ressource type"
 }
-
-# variable "bastion_resource_type" {
-#   type        = string
-#   description = "Name of the compute ressource type"
-# }
-
-# variable "bastion_vcpus" {
-#   type        = number
-#   description = "Number of vcpus"
-# }
-
-# variable "bastion_ram" {
-#   type        = number
-#   description = "RAM in GBytes"
-# }
-
 
 variable "bastion_image_name" {
   type        = string
@@ -81,4 +91,28 @@ variable "bastion_ssh_user_name" {
   type        = string
   default     = "ubuntu"
   description = "User name needed for default login at the OTC source image"
+}
+
+variable "bastion_ssh_port" {
+  type        = number
+  default     = 22
+  description = "SSH-port to access bastion host"
+}
+
+variable "bastion_ssh_access_constraint" {
+  type        = string
+  description = "CIDR of machines that are allowed to access the bastion host"
+  default     = "0.0.0.0/0"
+}
+
+# variable "bastion_system_disk_availability_zone" {
+#   type        = string
+#   description = "Availability disk for the system disk of the bastion host"
+#   default     = "eu-de-01"
+# }
+
+variable "bastion_system_disk_size" {
+  type        = number
+  default     = 20
+  description = "Size of the system disk for the bastion host"
 }
