@@ -54,16 +54,6 @@ variable "bastion_subnet_cidr" {
     default = "192.168.1.0/24"
 }
 
-variable "bastion_admin_key_name" {
-  type        = string
-  description = "Key name from user rolling out the bastion host"
-}
-
-variable "bastion_admin_public_key_file" {
-  type        = string
-  description = "Public Key file name for the bastion host"
-}
-
 variable "bastion_region" {
   type        = string
   description = "OTC region"
@@ -87,11 +77,11 @@ variable "bastion_image_name" {
   description = "Name of the OTC source image"
 }
 
-variable "bastion_ssh_user_name" {
-  type        = string
-  default     = "ubuntu"
-  description = "User name needed for default login at the OTC source image"
-}
+# variable "bastion_ssh_user_name" {
+#   type        = string
+#   default     = "ubuntu"
+#   description = "User name needed for default login at the OTC source image"
+# }
 
 variable "bastion_ssh_port" {
   type        = number
@@ -105,14 +95,41 @@ variable "bastion_ssh_access_constraint" {
   default     = "0.0.0.0/0"
 }
 
-# variable "bastion_system_disk_availability_zone" {
-#   type        = string
-#   description = "Availability disk for the system disk of the bastion host"
-#   default     = "eu-de-01"
-# }
-
 variable "bastion_system_disk_size" {
   type        = number
   default     = 20
   description = "Size of the system disk for the bastion host"
 }
+
+variable "bastion_paths_to_cloud_init_files" {
+  description = "List of paths relative to main.tf to custom Cloud-init configuration files. Cloud-init cloud config format is expected. Only *.yml and *.yaml files will be read."
+  type        = list(string)
+  default     = [""]
+}
+
+variable "bastion_emergency_user" {
+  description = "If set to *true*, a cloud-init config with an *bastion_emergency_ssh_key' for *bastion_emergency_user_spec* will be added."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_emergency_user_spec" {
+  description = "Name, groups, shell and public key of the emergency user for the bastion host. Must fit to the image/OS selected and/or to further cloud-init configurations applied."
+  type = object({
+    username        = string
+    groups          = string
+    shell           = string
+    public_key_file = string
+  })
+  default = {
+      username        = "emergency"
+      groups          = "wheel"
+      shell           = "/bin/bash"
+      public_key_file = ""
+    }
+}
+
+
+
+
+

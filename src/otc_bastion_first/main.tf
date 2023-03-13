@@ -21,14 +21,6 @@ resource opentelekomcloud_vpc_v1 vpc_1 {
 
 }
 
-# resource "opentelekomcloud_networking_network_v2" "network_1" {
-#   name           = "network_1"
-#   admin_state_up = "true"
-# }
-
-
-
-
 
 
 # public subnet for bastion host
@@ -51,19 +43,62 @@ data "opentelekomcloud_images_image_v2" "bastion_image" {
   name = var.bastion_image_name
 }
 
+data "opentelekomcloud_compute_flavor_v2" "bastion_flavor" {
+  name = var.bastion_flavor_name
+}
+
+
+locals {
+  cloud_init_files = flatten([
+    for path_to_cloud_init in var.bastion_paths_to_cloud_init_files : [
+      for path in fileset("", "${path_to_cloud_init}/*.{yml,yaml}") : path
+    ]
+  ])
+
+  cloud_init_emergency_user_config = !var.bastion_emergency_user ? "" : <<EOT
+users:
+  - default
+  - name: ${var.bastion_emergency_user_spec.username}
+    groups: ${var.bastion_emergency_user_spec.groups}
+    shell: ${var.bastion_emergency_user_spec.shell}
+    ssh-authorized-keys:
+      - ${file(var.bastion_emergency_user_spec.public_key_file)}
+  EOT
+}
+
+    # sudo: ['ALL=(ALL) NOPASSWD:ALL']
+
+
+output "cloudfiles" {
+  value = join( 
+        "\n", 
+        concat(["#cloud-config"], [for filepath in local.cloud_init_files : file(filepath)], [local.cloud_init_emergency_user_config] )
+      )
+}
+
+
+
 # Create a bastion host
 
 resource "opentelekomcloud_compute_instance_v2" "bastion" {
   name              = format("%s_bastion", var.environment)
-  image_name        = var.bastion_image_name # data.opentelekomcloud_images_image_v2.bastion_image.id
-  flavor_id         = var.bastion_flavor_name   # data.opentelekomcloud_compute_flavor_v2.bastion_flavor.id
-  # key_pair          = var.bastion_admin_key_name
+  image_name        = data.opentelekomcloud_images_image_v2.bastion_image.id
+  flavor_id         = data.opentelekomcloud_compute_flavor_v2.bastion_flavor.id
   availability_zone = var.bastion_availability_zone
   security_groups   = [opentelekomcloud_networking_secgroup_v2.bastion_securitygroup.name]
 
   network {
     uuid = opentelekomcloud_vpc_subnet_v1.bastion_public_subnet.id
   }
+
+  user_data = base64encode(
+    sensitive(
+      join( 
+        "\n", 
+        concat(["#cloud-config"], [for filepath in local.cloud_init_files : file(filepath)], [local.cloud_init_emergency_user_config] )
+      )
+    )
+  )
 
   block_device {
     uuid                  = data.opentelekomcloud_images_image_v2.bastion_image.id
@@ -82,29 +117,6 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
   }
 }
 
-# System Disk for bastion host
-
-# resource "opentelekomcloud_evs_volume_v3" "bastion_volume_1" {
-#   name              = "bastion_volume_1"
-#   description       = "Bastion host system disk"
-#   availability_zone = var.bastion_availability_zone
-#   volume_type       = "SATA"
-#   size              = var.bastion_system_disk_size
-
-#   tags = {
-#     workspace = var.environment
-#     function  = "BASTION"
-#   }
-# }
-
-# # Attach system disk to bastion host
-
-# resource "opentelekomcloud_compute_volume_attach_v2" "bastion_volume_attachment" {
-#   instance_id = opentelekomcloud_compute_instance_v2.bastion.id
-#   volume_id   = opentelekomcloud_evs_volume_v3.bastion_volume_1.id
-# }
-
-
 # SSH key for bastion host
 
 # resource "opentelekomcloud_compute_keypair_v2" "bastion_keypair" {
@@ -117,13 +129,6 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
 resource "opentelekomcloud_networking_secgroup_v2" "bastion_securitygroup" {
   name        = format("%s_bastion_security_group", var.environment)
   description = "Security group for the bastion host"
-
-  tags = {
-    deployment            = var.deployment_name
-    environment           = var.environment
-    function              = "bastion"
-  }
-
 }
 
 # SSH ingress allow security group for bastion 
@@ -136,13 +141,6 @@ resource "opentelekomcloud_networking_secgroup_rule_v2" "bastion_ssh_ingress_all
   port_range_max    = var.bastion_ssh_port
   remote_ip_prefix  = var.bastion_ssh_access_constraint
   security_group_id = opentelekomcloud_networking_secgroup_v2.bastion_securitygroup.id
-
-  tags = {
-    deployment            = var.deployment_name
-    environment           = var.environment
-    function              = "bastion"
-  }
-
 }
 
 # EIP for bastion
@@ -166,33 +164,9 @@ resource "opentelekomcloud_vpc_eip_v1" "bastion_public_ip" {
 
 }
 
+# Bind the floating IP to bastion
 
-# # Bind the floating IP to bastion
-# resource "opentelekomcloud_networking_floatingip_associate_v2" "floatingip_associate_bastion" {
-#   floating_ip = opentelekomcloud_vpc_eip_v1.bastion_public_ip.publicip[0].ip_address
-#   instance_id = opentelekomcloud_compute_instance_v2.bastion.id
-# }
-
-# resource "opentelekomcloud_networking_floatingip_v2" "bastion_public_ip" {
-# }
-
-# # Bind the floating IP to bastion
-
-# resource "opentelekomcloud_networking_floatingip_associate_v2" "bastion_public_ip_association" {
-#   floating_ip = opentelekomcloud_networking_floatingip_v2.bastion_public_ip.address
-#   instance_id = opentelekomcloud_compute_instance_v2.bastion.id
-#   port_id     = opentelekomcloud_compute_instance_v2.bastion_port_1.port_id
-# }
-
-
-# resource "opentelekomcloud_networking_port_v2" "bastion_port_1" {
-#   name               = "bastion_port_1"
-#   network_id         = opentelekomcloud_networking_network_v2.network_1.id
-#   admin_state_up     = "true"
-#   security_group_ids = [opentelekomcloud_networking_secgroup_v2.bastion_securitygroup.id]
-
-#   fixed_ip {
-#     subnet_id  = opentelekomcloud_networking_subnet_v2.bastion_public_subnet.id
-#     ip_address = "192.168.199.10"
-#   }
-# }
+resource "opentelekomcloud_networking_floatingip_associate_v2" "floatingip_associate_bastion" {
+  floating_ip = opentelekomcloud_vpc_eip_v1.bastion_public_ip.publicip.0.ip_address
+  port_id     = opentelekomcloud_compute_instance_v2.bastion.network.0.port
+}
