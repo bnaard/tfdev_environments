@@ -1,24 +1,8 @@
 #cloud-config
 write_files:
-  - path: /etc/environment
+  - path: /etc/test
     append: true
     owner: root:root
     permissions: '0444'
     content: |
-      #cloud-config
-      #cloud-config
-      write_files:
-        - path: /etc/environment
-          append: true
-          owner: root:root
-          permissions: '0444'
-          content: |
-            hello=world
-
-      users:
-        - default
-        - name: emergency
-          groups: [users, ubuntu]
-          shell: /bin/bash
-          ssh-authorized-keys:
-            - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCfB3/al3thMD9/2wuuLe14h3bp+bU7aUBD3zfVl5iaa3M16PUMbYHY/0D/T/VolvnqSF/Q6GRmEBH+VONa5BAjH2TH1BFQEBemP1YSjt6ibcGp5EKHIfbpB+BGCyFrqC368Ul30f1Qx6Ayxo54+NF+4ulf07qxYp6kxY2EPg//8qrN4mmhIK9NAvbSrnzv+ifFWyiExL4tE3W9ICTaYQGfIkCoX4pMF5XVi5LrswjUuR/CaIOMmtCmcGYr3subnpmmbBjlKjCA7cUbbzBmQDzp4dHbua/JNjWoqzsgjQyoHTHkDM1ORq+5rBuCSBffvvb6352vFbBhhFJiWp6QyaaX
+      Hello, world!
