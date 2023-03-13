@@ -20,5 +20,5 @@ bastion_image_name                = "Standard_Ubuntu_22.04_latest"
 bastion_ssh_port                  = 22
 bastion_ssh_access_constraint     = "0.0.0.0/0"
 bastion_paths_to_cloud_init_files = ["./cloud-init"]
-bastion_emergency_user            = true
+bastion_emergency_user            = false
 bastion_emergency_user_spec       = { username = "emergency", groups = "[users, ubuntu]", shell = "/bin/bash", public_key_file = "/Users/bernhardgerlach/Documents/53I1_Passwords/SSH-Keys/OTC-EU-DE-00000000001000041249/KeyPair-c8a8/KeyPair-c8a8_id_rsa.pub" }
