@@ -1,31 +1,18 @@
 # General variables
 
-variable "deployment_name" {
-  type        = string
-  description = "Identifies the deployment by name (eg. to destry everything at once)"
-  default     = "opentelekomcloud_deployment"
+variable "tags" {
+  type        = map(string)
+  description = "Identifies the deployment based on tags."
 }
-
-
-variable "environment" {
-  type        = string
-  description = "Identifies environment type (eg development, production)"
-}
-
 
 variable "identity_endpoint" {
   type        = string
   description = "OTC URL for the API"
 }
 
-variable "access_key" {
+variable "aksk_file" {
   type        = string
-  description = "OTC AK. Don't use together with username/password"
-}
-
-variable "secret_key" {
-  type        = string
-  description = "OTC SK. Don't use together with username/password"
+  description = "File for AK/SK (CSV-format as downloaded from Open Telekom Cloud)"
 }
 
 variable "domain_name" {
@@ -47,16 +34,16 @@ variable "vpc_cidr" {
 }
 
 
-
-# Bastion host specific variables
+## Bastion host related
 
 variable "bastion_subnet_cidr" {
-    default = "192.168.1.0/24"
+  default = "192.168.1.0/24"
 }
 
-variable "bastion_region" {
-  type        = string
-  description = "OTC region"
+variable "bastion_eip_bandwidth" {
+  description = "Bandwidth of public IP access to bastion host."
+  type        = number
+  default     = 8
 }
 
 variable "bastion_availability_zone" {
@@ -77,22 +64,16 @@ variable "bastion_image_name" {
   description = "Name of the OTC source image"
 }
 
-# variable "bastion_ssh_user_name" {
-#   type        = string
-#   default     = "ubuntu"
-#   description = "User name needed for default login at the OTC source image"
-# }
-
 variable "bastion_ssh_port" {
   type        = number
   default     = 22
   description = "SSH-port to access bastion host"
 }
 
-variable "bastion_ssh_access_constraint" {
-  type        = string
+variable "bastion_trusted_ssh_origins" {
+  type        = list(string)
   description = "CIDR of machines that are allowed to access the bastion host"
-  default     = "0.0.0.0/0"
+  default     = ["0.0.0.0/0"]
 }
 
 variable "bastion_system_disk_size" {
@@ -108,7 +89,7 @@ variable "bastion_paths_to_cloud_init_files" {
 }
 
 variable "bastion_emergency_user" {
-  description = "If set to *true*, a cloud-init config with an *bastion_emergency_ssh_key' for *bastion_emergency_user_spec* will be added."
+  description = "If set to *true*, a cloud-init config with an *emergency_ssh_key' for *emergency_user_spec* will be added."
   type        = bool
   default     = false
 }
@@ -119,16 +100,17 @@ variable "bastion_emergency_user_spec" {
     username        = string
     groups          = string
     shell           = string
+    sudo            = string
     public_key_file = string
   })
   default = {
       username        = "emergency"
-      groups          = "wheel"
+      groups          = ""
       shell           = "/bin/bash"
+      sudo            = "False"
       public_key_file = ""
     }
 }
-
 
 
 
