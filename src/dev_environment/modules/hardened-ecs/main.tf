@@ -1,9 +1,8 @@
-
-data "opentelekomcloud_images_image_v2" "bastion_image" {
+data "opentelekomcloud_images_image_v2" "image" {
   name = var.image_name
 }
 
-data "opentelekomcloud_compute_flavor_v2" "bastion_flavor" {
+data "opentelekomcloud_compute_flavor_v2" "flavor" {
   name = var.flavor_name
 }
 
@@ -17,6 +16,8 @@ data "template_file" "users_cloud_config" {
   template = !var.emergency_user ? "" : "${file("${path.module}/cloud-init/users.yaml")}"
   vars = {
     username        = var.emergency_user_spec.username
+    gecos           = "Emergency user"
+    lock_passwd     = true
     shell           = var.emergency_user_spec.shell
     groups          = "[ ${join( ", ", var.emergency_user_spec.groups)} ]"
     sudo            = var.emergency_user_spec.sudo
@@ -35,23 +36,18 @@ locals {
 
 
 
-# Create a bastion host
-
-resource "opentelekomcloud_compute_instance_v2" "bastion" {
+resource "opentelekomcloud_compute_instance_v2" "node" {
   name              = var.name
-  image_name        = data.opentelekomcloud_images_image_v2.bastion_image.id
-  flavor_id         = data.opentelekomcloud_compute_flavor_v2.bastion_flavor.id
+  image_name        = data.opentelekomcloud_images_image_v2.image.id
+  flavor_id         = data.opentelekomcloud_compute_flavor_v2.flavor.id
   availability_zone = local.availability_zone
-  security_groups   = [opentelekomcloud_networking_secgroup_v2.bastion_securitygroup.name]
+  security_groups   = [opentelekomcloud_networking_secgroup_v2.node_securitygroup.name]
 
   network {
-    uuid = var.subnet_id
+    uuid            = var.subnet_id
+    fixed_ip_v4     = var.fixed_ip_v4
   }
   
-  # network {
-  #   uuid = opentelekomcloud_vpc_subnet_v1.bastion_public_subnet.id
-  # }
-
   user_data = base64encode(
     sensitive(
       join( 
@@ -64,7 +60,7 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
   )
 
   block_device {
-    uuid                  = data.opentelekomcloud_images_image_v2.bastion_image.id
+    uuid                  = data.opentelekomcloud_images_image_v2.image.id
     source_type           = "image"
     volume_size           = var.system_disk_size
     boot_index            = 0
@@ -78,17 +74,15 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
   lifecycle {
     precondition {
       condition     = contains(data.opentelekomcloud_compute_availability_zones_v2.available_availability_zones.names, local.availability_zone)
-      error_message = "Availability zone setting invalid. For the region ${local.region} the valid AZ's are ${jsonencode(data.opentelekomcloud_compute_availability_zones_v2.available_availability_zones.names)}"
+      error_message = "For node ${var.name}, availability zone setting is invalid. For the region ${local.region} the valid AZ's are ${jsonencode(data.opentelekomcloud_compute_availability_zones_v2.available_availability_zones.names)}"
     }
   }
 
 }
 
 
-
-# EIP for bastion
-
-resource "opentelekomcloud_vpc_eip_v1" "bastion_public_ip" {
+resource "opentelekomcloud_vpc_eip_v1" "public_ip" {
+  count       = var.create_public_ip ? 1 : 0
   publicip {
     type = "5_bgp"
   }
@@ -99,13 +93,12 @@ resource "opentelekomcloud_vpc_eip_v1" "bastion_public_ip" {
     charge_mode = "traffic"
   }
 
-  tags = var.tags 
+  tags        = var.tags 
 }
 
 
-# Bind the floating IP to bastion
-
-resource "opentelekomcloud_networking_floatingip_associate_v2" "floatingip_associate_bastion" {
-  floating_ip = opentelekomcloud_vpc_eip_v1.bastion_public_ip.publicip.0.ip_address
-  port_id     = opentelekomcloud_compute_instance_v2.bastion.network.0.port
+resource "opentelekomcloud_networking_floatingip_associate_v2" "floatingip_associate" {
+  count       = var.create_public_ip ? 1 : 0
+  floating_ip = opentelekomcloud_vpc_eip_v1.public_ip[0].publicip.0.ip_address
+  port_id     = opentelekomcloud_compute_instance_v2.node.network.0.port
 }
