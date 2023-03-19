@@ -13,15 +13,7 @@ provider "opentelekomcloud" {
   auth_url    = var.identity_endpoint
 }
 
-# Create VPC for setup
 
-resource opentelekomcloud_vpc_v1 vpc_1 {
-  name = var.vpc_name
-  cidr = var.vpc_cidr
-
-  tags = merge( var.tags, { function = "vpc"} )
-
-}
 
 locals {
   cloud_init_files = flatten([
@@ -37,10 +29,9 @@ module "bastion" {
     source                    = "./modules/bastion"
     name                      = "bastion"  
     tags                      = merge( var.tags, { function = "bastion"} )
-    vpc_id                    = opentelekomcloud_vpc_v1.vpc_1.id
-    subnet_cidr               = var.bastion_subnet_cidr
+    subnet_id                 = opentelekomcloud_vpc_subnet_v1.dmz_subnet.id
     eip_bandwidth             = 5
-    system_disk_size          = 5
+    system_disk_size          = 7
     system_disk_type          = "SATA"
     availability_zone         = var.bastion_availability_zone
     flavor_name               = var.bastion_flavor_name

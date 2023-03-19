@@ -26,19 +26,29 @@ variable "tenant_name" {
 }
 
 variable "vpc_name" {
+  type    = string 
   default = "opentelekomcloud_vpc"
 }
 
 variable "vpc_cidr" {
+  type    = string
   default = "192.168.0.0/16"
 }
+
+# Subnets
+
+variable "dmz_subnet_cidr" {
+  default = "192.168.1.0/24"
+}
+
+variable "management_subnet_cidr" {
+  default = "192.168.2.0/24"
+}
+
 
 
 ## Bastion host related
 
-variable "bastion_subnet_cidr" {
-  default = "192.168.1.0/24"
-}
 
 variable "bastion_eip_bandwidth" {
   description = "Bandwidth of public IP access to bastion host."
@@ -98,14 +108,14 @@ variable "bastion_emergency_user_spec" {
   description = "Name, groups, shell and public key of the emergency user for the bastion host. Must fit to the image/OS selected and/or to further cloud-init configurations applied."
   type = object({
     username        = string
-    groups          = string
+    groups          = list(string)
     shell           = string
     sudo            = string
     public_key_file = string
   })
   default = {
       username        = "emergency"
-      groups          = ""
+      groups          = [""]
       shell           = "/bin/bash"
       sudo            = "False"
       public_key_file = ""

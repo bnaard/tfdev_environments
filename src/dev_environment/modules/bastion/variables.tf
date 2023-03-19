@@ -11,13 +11,9 @@ variable "tags" {
   description = "Tags applied to bastion host."
 }
 
-variable "vpc_id" {
+variable "subnet_id" {
   type        = string
-  description = "ID of VPC this bastion host belongs to."
-}
-
-variable "subnet_cidr" {
-  default = "192.168.1.0/24"
+  description = "ID of subnet this bastion host belongs to."
 }
 
 variable "eip_bandwidth" {
@@ -25,17 +21,6 @@ variable "eip_bandwidth" {
   type        = number
   default     = 8
 }
-
-# variable "region" {
-#   type        = string
-#   description = "OTC region"
-# }
-
-# variable "availability_zone" {
-#   type        = string
-#   description = "OTC availability zone for the bastion host an its attached disks"
-#   default     = "eu-de-01"
-# }
 
 variable "flavor_name" {
   type        = string
@@ -93,14 +78,14 @@ variable "emergency_user_spec" {
   description = "Name, groups, shell and public key of the emergency user for the bastion host. Must fit to the image/OS selected and/or to further cloud-init configurations applied."
   type = object({
     username        = string
-    groups          = string
+    groups          = list(string)
     shell           = string
     sudo            = string
     public_key_file = string
   })
   default = {
       username        = "emergency"
-      groups          = ""
+      groups          = [""]
       shell           = "/bin/bash"
       sudo            = "False"
       public_key_file = ""
@@ -112,33 +97,4 @@ variable "availability_zone" {
   type        = string
   description = "Availability zone for the bastion host."
   default     = ""
-}
-
-locals {
-  valid_availability_zones = {
-    eu-de = toset([
-      "eu-de-01",
-      "eu-de-02",
-      "eu-de-03",
-    ])
-    eu-nl = toset([
-      "eu-nl-01",
-      "eu-nl-02",
-      "eu-nl-03",
-    ])
-    eu-ch2 = toset([
-      "eu-ch2a",
-      "eu-ch2b",
-    ])
-  }
-  region            = data.opentelekomcloud_identity_project_v3.current.region
-  availability_zone = length(var.availability_zone) == 0 ? local.region == "eu-ch2" ? "eu-ch2b" : "${local.region}-02" : var.availability_zone
-}
-
-resource "errorcheck_is_valid" "availability_zone" {
-  name = "Check if availability_zones are set up correctly for bastion host."
-  test = {
-    assert        = contains(local.valid_availability_zones[local.region], local.availability_zone)
-    error_message = "Availability zone setting invalid. For ${local.region} the valid AZ's are ${jsonencode(local.valid_availability_zones[local.region])}"
-  }
 }

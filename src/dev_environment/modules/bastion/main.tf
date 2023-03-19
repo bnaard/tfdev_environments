@@ -1,13 +1,3 @@
-# public subnet for bastion host
-
-resource "opentelekomcloud_vpc_subnet_v1" "bastion_public_subnet" {
-  name       = "bastion_public_subnet"
-  vpc_id     = var.vpc_id    # opentelekomcloud_vpc_v1.vpc_1.id
-  cidr       = var.subnet_cidr
-  gateway_ip = cidrhost(var.subnet_cidr, 1) #  "192.168.1.1"
-
-  tags = var.tags 
-}
 
 data "opentelekomcloud_images_image_v2" "bastion_image" {
   name = var.image_name
@@ -28,12 +18,20 @@ data "template_file" "users_cloud_config" {
   vars = {
     username        = var.emergency_user_spec.username
     shell           = var.emergency_user_spec.shell
-    groups          = var.emergency_user_spec.groups
+    groups          = "[ ${join( ", ", var.emergency_user_spec.groups)} ]"
     sudo            = var.emergency_user_spec.sudo
     public_key_file = file(var.emergency_user_spec.public_key_file)
   }
 }
 
+data "opentelekomcloud_compute_availability_zones_v2" "available_availability_zones" {}
+
+data "opentelekomcloud_identity_project_v3" "current" {}
+
+locals {
+  region            = data.opentelekomcloud_identity_project_v3.current.region
+  availability_zone = var.availability_zone == "" ? "${local.region}-01" : var.availability_zone
+}
 
 
 
@@ -47,8 +45,12 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
   security_groups   = [opentelekomcloud_networking_secgroup_v2.bastion_securitygroup.name]
 
   network {
-    uuid = opentelekomcloud_vpc_subnet_v1.bastion_public_subnet.id
+    uuid = var.subnet_id
   }
+  
+  # network {
+  #   uuid = opentelekomcloud_vpc_subnet_v1.bastion_public_subnet.id
+  # }
 
   user_data = base64encode(
     sensitive(
@@ -57,8 +59,6 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
         [var.cloud_init_config],
         [data.template_file.security_cloud_config.rendered],
         [data.template_file.users_cloud_config.rendered] 
-        # [local.cloud_init_emergency_user_config] ,
-        # [for filepath in local.cloud_init_files : file(filepath)]
       )
     )
   )
@@ -74,6 +74,14 @@ resource "opentelekomcloud_compute_instance_v2" "bastion" {
   }
 
   tags = var.tags 
+
+  lifecycle {
+    precondition {
+      condition     = contains(data.opentelekomcloud_compute_availability_zones_v2.available_availability_zones.names, local.availability_zone)
+      error_message = "Availability zone setting invalid. For the region ${local.region} the valid AZ's are ${jsonencode(data.opentelekomcloud_compute_availability_zones_v2.available_availability_zones.names)}"
+    }
+  }
+
 }
 
 
