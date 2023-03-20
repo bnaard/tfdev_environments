@@ -1,8 +1,0 @@
-#cloud-config
-write_files:
-  - path: /etc/test
-    append: true
-    owner: root:root
-    permissions: '0444'
-    content: |
-      Hello, world!

@@ -133,4 +133,9 @@ variable "om_ansible_fixed_ip_v4" {
   default     = ""
 }
 
+variable "bastion_fixed_ip_v4" {
+  description = "Fixed internal IPv4 address of bastion host (default: \"\" => auto-assign)."
+  type        = string
+  default     = ""
+}
 

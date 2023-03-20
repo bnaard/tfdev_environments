@@ -25,6 +25,15 @@ data "template_file" "users_cloud_config" {
   }
 }
 
+data "template_file" "ssh_config" {
+  template ="${file("${path.module}/cloud-init/sshd_config.yaml")}"
+  vars = {
+    allow_tcp_forwarding        = var.allow_tcp_forwarding ? "yes" : "no"
+  }
+}
+
+
+
 data "opentelekomcloud_compute_availability_zones_v2" "available_availability_zones" {}
 
 data "opentelekomcloud_identity_project_v3" "current" {}

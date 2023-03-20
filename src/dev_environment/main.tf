@@ -30,6 +30,9 @@ module "bastion" {
     name                      = "bastion"  
     tags                      = merge( var.tags, { function = "bastion"} )
     subnet_id                 = opentelekomcloud_vpc_subnet_v1.dmz_subnet.id
+    # fixed_ip_v4               = var.bastion_fixed_ip_v4
+    allow_tcp_forwarding      = true
+    create_public_ip          = true
     eip_bandwidth             = 5
     system_disk_size          = 7
     system_disk_type          = "SATA"
@@ -43,6 +46,8 @@ module "bastion" {
     emergency_user_spec       = var.emergency_user_spec
 }
 
+#  - sed -i 's/\#\?PermitTunnel .\+/PermitTunnel yes/' /etc/ssh/sshd_config
+
 
 module "om_ansible" {
     count                     = 1
@@ -50,14 +55,14 @@ module "om_ansible" {
     name                      = "om_ansible"  
     tags                      = merge( var.tags, { function = "om_ansible"} )
     subnet_id                 = opentelekomcloud_vpc_subnet_v1.management_subnet.id
-    eip_bandwidth             = 5
+    fixed_ip_v4               = var.om_ansible_fixed_ip_v4
     system_disk_size          = 10
     system_disk_type          = "SATA"
     availability_zone         = var.bastion_availability_zone
     flavor_name               = "s3.medium.2"
     image_name                = "Standard_Ubuntu_22.04_latest"
     ssh_port                  = 22
-    trusted_ssh_origins       = flatten([ for bastion in module.bastion : bastion.access_ip_v4 ])
+    trusted_ssh_origins       = ["0.0.0.0/0"] # [for bastion in module.bastion : bastion.access_ip_v4]
     cloud_init_config         = ""
     emergency_user            = var.emergency_user
     emergency_user_spec       = var.emergency_user_spec

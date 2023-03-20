@@ -58,6 +58,11 @@ variable "trusted_ssh_origins" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "allow_tcp_forwarding" {
+  description   = "Enables (true) or disables (false) TCP forwarding for using the virtual machine as jump host (default: false)"
+  type          = bool
+  default       = false
+}
 
 variable "system_disk_size" {
   type        = number
