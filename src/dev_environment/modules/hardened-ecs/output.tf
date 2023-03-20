@@ -12,6 +12,7 @@ output "debug_cloudinit_config" {
         "\n", 
         [var.cloud_init_config], 
         [data.template_file.security_cloud_config.rendered], 
+        [data.template_file.sshd_config.rendered],
         [data.template_file.users_cloud_config.rendered] 
       )
 }

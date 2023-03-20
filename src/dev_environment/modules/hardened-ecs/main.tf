@@ -25,7 +25,7 @@ data "template_file" "users_cloud_config" {
   }
 }
 
-data "template_file" "ssh_config" {
+data "template_file" "sshd_config" {
   template ="${file("${path.module}/cloud-init/sshd_config.yaml")}"
   vars = {
     allow_tcp_forwarding        = var.allow_tcp_forwarding ? "yes" : "no"
@@ -63,6 +63,7 @@ resource "opentelekomcloud_compute_instance_v2" "node" {
         "\n", 
         [var.cloud_init_config],
         [data.template_file.security_cloud_config.rendered],
+        [data.template_file.sshd_config.rendered],
         [data.template_file.users_cloud_config.rendered] 
       )
     )
